@@ -2,19 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ### PART 1: Loading data
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 clean_data = np.loadtxt('./wifi_db/clean_dataset.txt')
 noisy_data = np.loadtxt('./wifi_db/noisy_dataset.txt')
 
 # Set a seed to make the results reproducible
-seed = 42
+seed = 1330
 np.random.seed(seed)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Part 2: Creating Decision Trees
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 # Computes the entropy given an array of labels
@@ -82,6 +88,14 @@ def decision_tree_learning(training_dataset, depth=0):
         node.depth = max(depth_left, depth_right) + 1
         return node, node.depth
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# BONUS PART:
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 def plot_node(ax, node, x, y, dx, depth):
     if node.attribute is None:
         ax.text(x, y, f'leaf: {node.label:.0f}', ha='center', bbox=dict(facecolor='white', edgecolor='black'))
@@ -107,76 +121,36 @@ def visualize_tree(tree):
     plt.savefig("./tree.pdf")
     plt.show()
 
-# # Used to visualize the decision tree
-# def visualize_tree(tree, max_depth=None):
-#     fig, ax = plt.subplots()
-#     bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.9)
-#     depth = tree.depth
-#     dx = depth ** 2
-#     global min_x, max_x
-#     min_x = max_x = 0
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#     def visualize_tree_helper(node, x, y, dx):
-#         global min_x, max_x
-#         if max_depth is not None and y < -max_depth:
-#             return
-#         if y < -depth:
-#             return
-
-#         min_x = min(min_x, x)
-#         max_x = max(max_x, x)
-
-#         if node.attribute is None:
-#             ax.text(x, y, 'leaf: ' + str(node.label), ha='center', va='center', size=4.5, bbox=bbox_props)
-#         else:
-#             ax.text(x, y, '[X' + str(node.attribute) + ' < ' + str(node.value) + ']', ha='center', va='center', size=4.5, bbox=bbox_props)
-#             ax.plot([x, x - dx], [y, y - 1])
-#             ax.plot([x, x + dx], [y, y - 1])
-#             visualize_tree_helper(node.left, x - dx, y - 1, dx / 2)
-#             visualize_tree_helper(node.right, x + dx, y - 1, dx / 2)
-
-#     visualize_tree_helper(tree, 0, 0, dx)
-#     ax.set_xlim(min_x * 1.1, max_x * 1.1)
-#     ax.set_ylim(-depth * 1.05, 0)
-#     ax.spines['top'].set_visible(False)
-#     ax.spines['right'].set_visible(False)
-#     ax.spines['bottom'].set_visible(False)
-#     ax.spines['left'].set_visible(False)
-#     ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
-#     fig.tight_layout()
-#     plt.savefig("./visualization.pdf")
-#     plt.show()
-
+## PART 3: Evaluation
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-## PART 3: Evaluation
-
-
-# Predicts the label of a given data point
-def predict_node(x, node):
+def predict(node, X):
     if node.attribute is None:
-        return node.label
-    elif x[node.attribute] < node.value:
-        return predict_node(x, node.left)
-    else:
-        return predict_node(x, node.right)
+        return np.full(len(X), node.label)
+    
+    left_indices = X[:, node.attribute] <= node.value
+    right_indices = X[:, node.attribute] > node.value
+    
+    predictions  = np.zeros(len(X))
+    predictions[left_indices] = predict(node.left, X[left_indices])
+    predictions[right_indices] = predict(node.right, X[right_indices])
 
+    return predictions  
 
-# Evaluates the accuracy of the decision tree on the test dataset
-def evaluate(test_db, trained_tree):
-    n = len(test_db)
-    accuracy = 0
-    num_classes = len(np.unique(test_db[:, -1]))
-    confusion_matrix = np.zeros((num_classes, num_classes))
-    for i in range(n):
-        predicted = predict_node(test_db[i], trained_tree)
-        if predicted == test_db[i, -1]:
-            accuracy += 1
-        confusion_matrix[int(test_db[i, -1]) - 1][int(predicted) - 1] += 1
-        
-    return accuracy / n, confusion_matrix
+def evaluate(test_dataset, trained_tree):
+    y_pred = predict(trained_tree, test_dataset[:, :-1])
+    y_true = test_dataset[:, -1]
+    accuracy = np.mean(y_pred == y_true)
+    num_classes = len(np.unique(y_true))
+    confusion_matrix = np.zeros((num_classes, num_classes), dtype=int)
+    for true_label, pred_label in zip(y_true, y_pred):
+        confusion_matrix[int(true_label) - 1, int(pred_label) - 1] += 1
+    
+    return accuracy, confusion_matrix
 
 
 # Computes the precision array given the confusion matrix: tp/(tp+fp)
@@ -393,4 +367,5 @@ def part4_results(data, visualize=False):
     print("F1-score:", compute_f1_score(compute_precision(confusion_matrix), compute_recall(confusion_matrix)))
     plot_confusion_matrix(confusion_matrix)
 
-part4_results(clean_data, True)
+part3_results(noisy_data, True)
+part4_results(noisy_data, True)
