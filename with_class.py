@@ -82,46 +82,70 @@ def decision_tree_learning(training_dataset, depth=0):
         node.depth = max(depth_left, depth_right) + 1
         return node, node.depth
 
+def plot_node(ax, node, x, y, dx, depth):
+    if node.attribute is None:
+        ax.text(x, y, f'leaf: {node.label:.0f}', ha='center', bbox=dict(facecolor='white', edgecolor='black'))
+    else:
+        ax.text(x, y, f'[X{node.attribute} < {node.value:.1f}]', ha='center', bbox=dict(facecolor='white', edgecolor='black'))
+        
+        # Plot left subtree
+        ax.plot([x, x - dx], [y, y - 1], color='orange')
+        plot_node(ax, node.left, x - dx, y - 1, dx / 2, depth + 1)
+        
+        # Plot right subtree
+        ax.plot([x, x + dx], [y, y - 1], color='blue')
+        plot_node(ax, node.right, x + dx, y - 1, dx / 2, depth + 1)
 
-# Used to visualize the decision tree
-def visualize_tree(tree, max_depth=None):
-    fig, ax = plt.subplots()
-    bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.9)
+def visualize_tree(tree):
     depth = tree.depth
-    dx = depth ** 2
-    global min_x, max_x
-    min_x = max_x = 0
-
-    def visualize_tree_helper(node, x, y, dx):
-        global min_x, max_x
-        if max_depth is not None and y < -max_depth:
-            return
-        if y < -depth:
-            return
-
-        min_x = min(min_x, x)
-        max_x = max(max_x, x)
-
-        if node.attribute is None:
-            ax.text(x, y, 'leaf: ' + str(node.label), ha='center', va='center', size=4.5, bbox=bbox_props)
-        else:
-            ax.text(x, y, '[X' + str(node.attribute) + ' < ' + str(node.value) + ']', ha='center', va='center', size=4.5, bbox=bbox_props)
-            ax.plot([x, x - dx], [y, y - 1])
-            ax.plot([x, x + dx], [y, y - 1])
-            visualize_tree_helper(node.left, x - dx, y - 1, dx / 2)
-            visualize_tree_helper(node.right, x + dx, y - 1, dx / 2)
-
-    visualize_tree_helper(tree, 0, 0, dx)
-    ax.set_xlim(min_x * 1.1, max_x * 1.1)
-    ax.set_ylim(-depth * 1.05, 0)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-2**depth, 2**depth)
+    ax.set_ylim(-depth-0.5, 1)
+    ax.axis('off')
+    plot_node(ax, tree, 0, 0, 2**(depth-1), 0)
     fig.tight_layout()
-    plt.savefig("./visualization.pdf")
+    plt.savefig("./tree.pdf")
     plt.show()
+
+# # Used to visualize the decision tree
+# def visualize_tree(tree, max_depth=None):
+#     fig, ax = plt.subplots()
+#     bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.9)
+#     depth = tree.depth
+#     dx = depth ** 2
+#     global min_x, max_x
+#     min_x = max_x = 0
+
+#     def visualize_tree_helper(node, x, y, dx):
+#         global min_x, max_x
+#         if max_depth is not None and y < -max_depth:
+#             return
+#         if y < -depth:
+#             return
+
+#         min_x = min(min_x, x)
+#         max_x = max(max_x, x)
+
+#         if node.attribute is None:
+#             ax.text(x, y, 'leaf: ' + str(node.label), ha='center', va='center', size=4.5, bbox=bbox_props)
+#         else:
+#             ax.text(x, y, '[X' + str(node.attribute) + ' < ' + str(node.value) + ']', ha='center', va='center', size=4.5, bbox=bbox_props)
+#             ax.plot([x, x - dx], [y, y - 1])
+#             ax.plot([x, x + dx], [y, y - 1])
+#             visualize_tree_helper(node.left, x - dx, y - 1, dx / 2)
+#             visualize_tree_helper(node.right, x + dx, y - 1, dx / 2)
+
+#     visualize_tree_helper(tree, 0, 0, dx)
+#     ax.set_xlim(min_x * 1.1, max_x * 1.1)
+#     ax.set_ylim(-depth * 1.05, 0)
+#     ax.spines['top'].set_visible(False)
+#     ax.spines['right'].set_visible(False)
+#     ax.spines['bottom'].set_visible(False)
+#     ax.spines['left'].set_visible(False)
+#     ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+#     fig.tight_layout()
+#     plt.savefig("./visualization.pdf")
+#     plt.show()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
