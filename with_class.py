@@ -153,7 +153,7 @@ def evaluate(test_dataset, trained_tree):
     return accuracy, confusion_matrix
 
 
-# Computes the precision array given the confusion matrix: tp/(tp+fp)
+# Calculates the precision array from the confusion matrix
 def compute_precision(confusion_matrix):
     precision = np.zeros(len(confusion_matrix))
     for i in range(len(confusion_matrix)):
@@ -161,7 +161,7 @@ def compute_precision(confusion_matrix):
     return precision
 
 
-# Computes the recall given the confusion matrix: tp/(tp+fn)
+# Calculates the recall from the confusion matrix
 def compute_recall(confusion_matrix):
     recall = np.zeros(len(confusion_matrix))
     for i in range(len(confusion_matrix)):
@@ -169,7 +169,7 @@ def compute_recall(confusion_matrix):
     return recall
 
 
-# Computes the F1 score as 2 * p * r / (p + r) where p is precision and r is recall
+# Calculates the F1 score 
 def compute_f1_score(precision, recall):
     f1_score = np.zeros(len(precision))
     for i in range(len(precision)):
