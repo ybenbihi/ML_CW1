@@ -293,9 +293,11 @@ def cross_validation(dataset, visualize=False):
 
     return total_accuracy / n_folds, cumulative_confusion / n_folds
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#==================================================================================================
+### Part 4: Pruning (and evaluation gain)
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 # Stores the data points that reach each node
@@ -426,4 +428,4 @@ def part4_results(data, visualize=False):
     plot_confusion_matrix(confusion_matrix)
 
 part3_results(noisy_data, True)
-# part4_results(noisy_data, True)
+part4_results(noisy_data, True)
