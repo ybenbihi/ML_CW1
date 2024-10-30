@@ -154,27 +154,28 @@ def evaluate(test_dataset, trained_tree):
 
 
 # Calculates the precision array from the confusion matrix
-def compute_precision(confusion_matrix):
-    precision = np.zeros(len(confusion_matrix))
-    for i in range(len(confusion_matrix)):
-        precision[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[:, i])
-    return precision
-
+def calculate_precision(matrix):
+    precisions = np.zeros(matrix.shape[0])
+    for index in range(matrix.shape[0]):
+        column_sum = np.sum(matrix[:, index])
+        precisions[index] = matrix[index, index] / column_sum if column_sum > 0 else 0
+    return precisions
 
 # Calculates the recall from the confusion matrix
-def compute_recall(confusion_matrix):
-    recall = np.zeros(len(confusion_matrix))
-    for i in range(len(confusion_matrix)):
-        recall[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[i, :])
-    return recall
-
+def calculate_recall(matrix):
+    recalls = np.zeros(matrix.shape[0])
+    for index in range(matrix.shape[0]):
+        row_sum = np.sum(matrix[index, :])
+        recalls[index] = matrix[index, index] / row_sum if row_sum > 0 else 0
+    return recalls
 
 # Calculates the F1 score 
-def compute_f1_score(precision, recall):
-    f1_score = np.zeros(len(precision))
-    for i in range(len(precision)):
-        f1_score[i] = 2 * precision[i] * recall[i] / (precision[i] + recall[i])
-    return f1_score
+def calculate_f1(precisions, recalls):
+    f1_scores = np.zeros(len(precisions))
+    for index in range(len(precisions)):
+        denom = precisions[index] + recalls[index]
+        f1_scores[index] = 2 * precisions[index] * recalls[index] / denom if denom > 0 else 0
+    return f1_scores
 
 # Plots the confusion matrix
 def plot_confusion_matrix(matrix):
@@ -355,18 +356,18 @@ def cross_validation_prune(data, visualize=False):
 def part3_results(data, visualize=False):
     accuracy, confusion_matrix = cross_validation(data, visualize=visualize)
     print("Accuracy:", accuracy)
-    print("Precision:", compute_precision(confusion_matrix))
-    print("Recall:", compute_recall(confusion_matrix))
-    print("F1-score:", compute_f1_score(compute_precision(confusion_matrix), compute_recall(confusion_matrix)))
+    print("Precision:", calculate_precision(confusion_matrix))
+    print("Recall:", calculate_recall(confusion_matrix))
+    print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
     plot_confusion_matrix(confusion_matrix)
 
 
 def part4_results(data, visualize=False):
     accuracy, confusion_matrix = cross_validation_prune(data, visualize=visualize)
     print("Accuracy:", accuracy)
-    print("Precision:", compute_precision(confusion_matrix))
-    print("Recall:", compute_recall(confusion_matrix))
-    print("F1-score:", compute_f1_score(compute_precision(confusion_matrix), compute_recall(confusion_matrix)))
+    print("Precision:", calculate_precision(confusion_matrix))
+    print("Recall:", calculate_recall(confusion_matrix))
+    print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
     plot_confusion_matrix(confusion_matrix)
 
 part3_results(noisy_data, True)
