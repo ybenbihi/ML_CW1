@@ -176,32 +176,7 @@ def compute_f1_score(precision, recall):
         f1_score[i] = 2 * precision[i] * recall[i] / (precision[i] + recall[i])
     return f1_score
 
-
-# # Plots the confusion matrix in a similar way to sklearn library
-# def plot_confusion_matrix(confusion_matrix):
-#     class_names = [("Room " + str(i)) for i in range(len(confusion_matrix))]
-#     fig, ax = plt.subplots()
-#     im = ax.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
-#     ax.figure.colorbar(im, ax=ax)
-
-#     ax.set(xticks=np.arange(confusion_matrix.shape[1]),
-#            yticks=np.arange(confusion_matrix.shape[0]),
-#            xticklabels=class_names, yticklabels=class_names,
-#            title='Confusion Matrix',
-#            ylabel='True label',
-#            xlabel='Predicted label')
-    
-#     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-#     for i in range(confusion_matrix.shape[0]):
-#         for j in range(confusion_matrix.shape[1]):
-#             ax.text(j, i, confusion_matrix[i, j],
-#                     ha="center", va="center",
-#                     color="white" if confusion_matrix[i, j] > confusion_matrix.max() / 2 else "black")
-
-#     fig.tight_layout()
-#     plt.show()
-
+# Plots the confusion matrix
 def plot_confusion_matrix(matrix):
     labels = ["Room " + str(i + 1) for i in range(matrix.shape[0])]
     fig, ax = plt.subplots()
@@ -226,40 +201,7 @@ def plot_confusion_matrix(matrix):
     plt.tight_layout()
     plt.show()
 
-
-
-# # Performs 10-fold cross validation on the dataset
-# def cross_validation(data, visualize=False):
-#     n = len(data)
-#     k = 10
-#     accuracy = 0
-#     fold_size = n / k
-#     confusion_matrix = np.zeros((len(np.unique(data[:, -1])), len(np.unique(data[:, -1]))))
-
-#     indices = np.random.permutation(n)
-#     test_db = data[indices]
-
-#     if visualize:
-#         global_best = 0
-#         best_tree = None
-
-#     for i in range(k):
-#         print("Evaluating fold", i)
-#         test_data = test_db[int(i * fold_size):int((i + 1) * fold_size), :]
-#         train_data = np.delete(test_db, np.s_[int(i * fold_size):int((i + 1) * fold_size)], axis=0)
-#         trained_tree, _ = decision_tree_learning(train_data)
-#         acc, con = evaluate(test_data, trained_tree)
-#         accuracy += acc
-#         confusion_matrix += con
-#         if visualize and acc > global_best:
-#             global_best = acc
-#             best_tree = trained_tree
-
-#     if visualize:
-#         visualize_tree(best_tree)
-
-#     return accuracy / k, confusion_matrix / k
-
+# Performs 10-fold cross validation
 def cross_validation(dataset, visualize=False):
     n_samples = len(dataset)
     n_folds = 10
