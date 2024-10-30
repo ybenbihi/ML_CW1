@@ -177,63 +177,121 @@ def compute_f1_score(precision, recall):
     return f1_score
 
 
-# Plots the confusion matrix in a similar way to sklearn library
-def plot_confusion_matrix(confusion_matrix):
-    class_names = [("Room " + str(i)) for i in range(len(confusion_matrix))]
-    fig, ax = plt.subplots()
-    im = ax.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
-    ax.figure.colorbar(im, ax=ax)
+# # Plots the confusion matrix in a similar way to sklearn library
+# def plot_confusion_matrix(confusion_matrix):
+#     class_names = [("Room " + str(i)) for i in range(len(confusion_matrix))]
+#     fig, ax = plt.subplots()
+#     im = ax.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+#     ax.figure.colorbar(im, ax=ax)
 
-    ax.set(xticks=np.arange(confusion_matrix.shape[1]),
-           yticks=np.arange(confusion_matrix.shape[0]),
-           xticklabels=class_names, yticklabels=class_names,
-           title='Confusion Matrix',
-           ylabel='True label',
-           xlabel='Predicted label')
+#     ax.set(xticks=np.arange(confusion_matrix.shape[1]),
+#            yticks=np.arange(confusion_matrix.shape[0]),
+#            xticklabels=class_names, yticklabels=class_names,
+#            title='Confusion Matrix',
+#            ylabel='True label',
+#            xlabel='Predicted label')
     
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+#     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
-    for i in range(confusion_matrix.shape[0]):
-        for j in range(confusion_matrix.shape[1]):
-            ax.text(j, i, confusion_matrix[i, j],
-                    ha="center", va="center",
-                    color="white" if confusion_matrix[i, j] > confusion_matrix.max() / 2 else "black")
+#     for i in range(confusion_matrix.shape[0]):
+#         for j in range(confusion_matrix.shape[1]):
+#             ax.text(j, i, confusion_matrix[i, j],
+#                     ha="center", va="center",
+#                     color="white" if confusion_matrix[i, j] > confusion_matrix.max() / 2 else "black")
 
-    fig.tight_layout()
+#     fig.tight_layout()
+#     plt.show()
+
+def plot_confusion_matrix(matrix):
+    labels = ["Room " + str(i + 1) for i in range(matrix.shape[0])]
+    fig, ax = plt.subplots()
+    cax = ax.matshow(matrix, cmap='Blues')
+    fig.colorbar(cax)
+
+    ax.set_xticks(np.arange(matrix.shape[1]))
+    ax.set_yticks(np.arange(matrix.shape[0]))
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+    ax.set_yticklabels(labels)
+    
+    ax.set_title('Confusion Matrix', pad=20)
+    ax.set_xlabel('Predicted label')
+    ax.set_ylabel('True label')
+
+    threshold = matrix.max() / 2
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            ax.text(j, i, f"{matrix[i, j]}", va='center', ha='center',
+                    color="white" if matrix[i, j] > threshold else "black")
+
+    plt.tight_layout()
     plt.show()
 
 
-# Performs 10-fold cross validation on the dataset
-def cross_validation(data, visualize=False):
-    n = len(data)
-    k = 10
-    accuracy = 0
-    fold_size = n / k
-    confusion_matrix = np.zeros((len(np.unique(data[:, -1])), len(np.unique(data[:, -1]))))
 
-    indices = np.random.permutation(n)
-    test_db = data[indices]
+# # Performs 10-fold cross validation on the dataset
+# def cross_validation(data, visualize=False):
+#     n = len(data)
+#     k = 10
+#     accuracy = 0
+#     fold_size = n / k
+#     confusion_matrix = np.zeros((len(np.unique(data[:, -1])), len(np.unique(data[:, -1]))))
+
+#     indices = np.random.permutation(n)
+#     test_db = data[indices]
+
+#     if visualize:
+#         global_best = 0
+#         best_tree = None
+
+#     for i in range(k):
+#         print("Evaluating fold", i)
+#         test_data = test_db[int(i * fold_size):int((i + 1) * fold_size), :]
+#         train_data = np.delete(test_db, np.s_[int(i * fold_size):int((i + 1) * fold_size)], axis=0)
+#         trained_tree, _ = decision_tree_learning(train_data)
+#         acc, con = evaluate(test_data, trained_tree)
+#         accuracy += acc
+#         confusion_matrix += con
+#         if visualize and acc > global_best:
+#             global_best = acc
+#             best_tree = trained_tree
+
+#     if visualize:
+#         visualize_tree(best_tree)
+
+#     return accuracy / k, confusion_matrix / k
+
+def cross_validation(dataset, visualize=False):
+    n_samples = len(dataset)
+    n_folds = 10
+    total_accuracy = 0
+    fold_len = n_samples // n_folds
+    cumulative_confusion = np.zeros((len(np.unique(dataset[:, -1])), len(np.unique(dataset[:, -1]))))
+    random_order = np.random.permutation(n_samples)
+    shuffled_data = dataset[random_order]
+
+    highest_accuracy = 0
+    best_tree_model = None
+
+    for fold in range(n_folds):
+        print(f"Processing fold {fold + 1}/{n_folds}")
+
+        test_set = shuffled_data[fold * fold_len : (fold + 1) * fold_len]
+        train_set = np.vstack([shuffled_data[:fold * fold_len], shuffled_data[(fold + 1) * fold_len:]])
+
+        tree, _ = decision_tree_learning(train_set)
+        fold_accuracy, fold_conf_matrix = evaluate(test_set, tree)
+        
+        total_accuracy += fold_accuracy
+        cumulative_confusion += fold_conf_matrix
+
+        if visualize and fold_accuracy > highest_accuracy:
+            highest_accuracy = fold_accuracy
+            best_tree_model = tree
 
     if visualize:
-        global_best = 0
-        best_tree = None
+        visualize_tree(best_tree_model)
 
-    for i in range(k):
-        print("Evaluating fold", i)
-        test_data = test_db[int(i * fold_size):int((i + 1) * fold_size), :]
-        train_data = np.delete(test_db, np.s_[int(i * fold_size):int((i + 1) * fold_size)], axis=0)
-        trained_tree, _ = decision_tree_learning(train_data)
-        acc, con = evaluate(test_data, trained_tree)
-        accuracy += acc
-        confusion_matrix += con
-        if visualize and acc > global_best:
-            global_best = acc
-            best_tree = trained_tree
-
-    if visualize:
-        visualize_tree(best_tree)
-
-    return accuracy / k, confusion_matrix / k
+    return total_accuracy / n_folds, cumulative_confusion / n_folds
 
 
 #==================================================================================================
@@ -368,4 +426,4 @@ def part4_results(data, visualize=False):
     plot_confusion_matrix(confusion_matrix)
 
 part3_results(noisy_data, True)
-part4_results(noisy_data, True)
+# part4_results(noisy_data, True)
