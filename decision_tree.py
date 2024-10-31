@@ -580,5 +580,4 @@ def part4_results(data, visualize=False):
     print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
     plot_confusion_matrix(confusion_matrix)
 
-part3_results(clean_data, True)
-part4_results(clean_data, True)
+part4_results(noisy_data, True)
