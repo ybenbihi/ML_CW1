@@ -12,7 +12,7 @@ clean_data = np.loadtxt('./wifi_db/clean_dataset.txt')
 noisy_data = np.loadtxt('./wifi_db/noisy_dataset.txt')
 
 # Set a seed to make the results reproducible
-seed = 1330
+seed = 42
 np.random.seed(seed)
 
 
@@ -190,8 +190,8 @@ def plot_confusion_matrix(matrix):
     ax.set_yticklabels(labels)
     
     ax.set_title('Confusion Matrix', pad=20)
-    ax.set_xlabel('Predicted label')
-    ax.set_ylabel('True label')
+    ax.set_xlabel('Predicted Class')
+    ax.set_ylabel('True Class')
 
     threshold = matrix.max() / 2
     for i in range(matrix.shape[0]):
@@ -204,12 +204,11 @@ def plot_confusion_matrix(matrix):
 
 # Performs 10-fold cross validation
 def cross_validation(dataset, visualize=False):
-    n_samples = len(dataset)
     n_folds = 10
     total_accuracy = 0
-    fold_len = n_samples // n_folds
+    fold_len = len(dataset) // n_folds
     cumulative_confusion = np.zeros((len(np.unique(dataset[:, -1])), len(np.unique(dataset[:, -1]))))
-    random_order = np.random.permutation(n_samples)
+    random_order = np.random.permutation(len(dataset))
     shuffled_data = dataset[random_order]
 
     highest_accuracy = 0
@@ -244,14 +243,13 @@ def cross_validation(dataset, visualize=False):
 
 
 # Stores the data points that reach each node
-def store_point(x, node):
+def store_x(x, node):
     node.data_points.append(x)  # Append the data point to the node's list
-
     if node.attribute is not None:
         if x[node.attribute] < node.value:
-            store_point(x, node.left)
+            store_x(x, node.left)
         else:
-            store_point(x, node.right)
+            store_x(x, node.right)
 
 # Prunes the decision tree; returns True if the resulting node is a leaf
 def prune_tree(node):
@@ -284,29 +282,23 @@ def prune_tree(node):
             return True
     return False
 
-# Prunes the decision tree using the validation dataset
-def prune(validation_db, trained_tree):
-    for x in validation_db:
-        store_point(x, trained_tree)
-    prune_tree(trained_tree)
-
 # Performs 10-fold cross-validation on the dataset, and shows the best pruned tree if visualize=True
 def cross_validation_prune(data, visualize=False):
-    n = len(data)
-    k, accuracy = 10, 0
+    k = 10
+    totala_accuracy = 0
     class_num = len(np.unique(data[:, -1]))
-    fold_size = n // k
+    fold_size = len(data) // k
     confusion_matrix = np.zeros((class_num, class_num))
     depths_before = np.zeros(k)
     depths_after = np.zeros(k)
-
+    
     # Randomly shuffle the data
     np.random.shuffle(data)
     
     for i in range(k):
         internal_accuracy = 0
         internal_con = np.zeros((class_num, class_num))
-        print('Evaluating fold', i)
+        print(f"Processing fold {i + 1}/{k}")
         
         # Use one fold as test set
         test_db = data[int(i * fold_size):int((i + 1) * fold_size), :]
@@ -322,7 +314,9 @@ def cross_validation_prune(data, visualize=False):
             validation_db = not_test_db[int(j * fold_size):int((j + 1) * fold_size), :]
             train_db = np.delete(not_test_db, np.s_[int(j * fold_size):int((j + 1) * fold_size)], axis=0)
             trained_tree, depth_before = decision_tree_learning(train_db)
-            prune(validation_db, trained_tree)
+            for x in validation_db:
+                store_x(x, trained_tree)
+            prune_tree(trained_tree)
             new_accuracy, con = evaluate(test_db, trained_tree)
 
             if new_accuracy > internal_accuracy:
@@ -335,22 +329,24 @@ def cross_validation_prune(data, visualize=False):
                 global_best = new_accuracy
                 best_tree = trained_tree
 
-        accuracy += internal_accuracy
+        totala_accuracy += internal_accuracy
         confusion_matrix += internal_con
 
     if visualize:
         visualize_tree(best_tree)
 
-    print('Average maximal depth before pruning:', np.mean(depths_before))
-    print('Average maximal depth after pruning:', np.mean(depths_after))
+    print('Mean depth :')
+    print('     Before pruning : ', np.mean(depths_before))
+    print('     After pruning : ', np.mean(depths_after))
 
-    return accuracy / k, confusion_matrix / k
-
-
-#==================================================================================================
+    return totala_accuracy / k, confusion_matrix / k
 
 
-# SAMPLE SCRIPTS:
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### EXAMPLE
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 def part3_results(data, visualize=False):
