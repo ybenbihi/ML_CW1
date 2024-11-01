@@ -563,21 +563,28 @@ def cross_validation_prune(data, visualize=False):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def part3_results(data, visualize=False):
+def step3(data, visualize=False):
     accuracy, confusion_matrix = cross_validation(data, visualize=visualize)
     print("Accuracy:", accuracy)
     print("Precision:", calculate_precision(confusion_matrix))
     print("Recall:", calculate_recall(confusion_matrix))
     print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
-    plot_confusion_matrix(confusion_matrix)
+    if visualize:
+        plot_confusion_matrix(confusion_matrix)
 
 
-def part4_results(data, visualize=False):
+def step4(data, visualize=False):
     accuracy, confusion_matrix = cross_validation_prune(data, visualize=visualize)
     print("Accuracy:", accuracy)
     print("Precision:", calculate_precision(confusion_matrix))
     print("Recall:", calculate_recall(confusion_matrix))
     print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
-    plot_confusion_matrix(confusion_matrix)
+    if visualize:
+        plot_confusion_matrix(confusion_matrix)
 
-part4_results(noisy_data, True)
+# dataset = clean_data
+# dataset = noisy_data
+
+# step3(dataset, True)
+# step4(dataset, True)
+
