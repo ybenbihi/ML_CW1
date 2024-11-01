@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### PART 1: Loading data
+### Part 1: Loading data
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -26,7 +26,7 @@ np.random.seed(seed)
 
 def compute_entropy(labels):
     """
-    Computes the entropy of an array of labels.
+    Computes the entropy
 
     Parameters
     ----------
@@ -38,6 +38,7 @@ def compute_entropy(labels):
     float
         The entropy value of the labels.
     """
+    # Getting unique labels and their respective counts in the labels array
     _, counts = np.unique(labels, return_counts=True)
     prob = counts / np.sum(counts)
     return -np.sum(prob * np.log2(prob))
@@ -56,31 +57,37 @@ def find_split(dataset):
     Returns
     -------
     int
-        Index of the best attribute for the split.
+        Best attribute for the split.
     float
         Value of the split point for the best attribute.
     """
+    # Separating features (x) from labels (y)
     x = dataset[:, :-1]
     y = dataset[:, -1]
 
     H_total = compute_entropy(y)
 
+    # Variables to keep track of the best split
     max_gain = 0
     best_attribute = -1
     best_split = None
 
+    # Iterating over each attribute to evaluate potential splits
     for attribute in range(x.shape[1]):
-        arr = x[:, attribute]
-        uniques = np.unique(arr)
+        arr = x[:, attribute]  # Values for the current attribute across all instances
+        uniques = np.unique(arr)  # Unique values to consider for splitting
 
+        # Test each unique value as a potential split point
         for split in uniques:
+            # Dividing the labels based on the split
             left_ds = y[arr < split]
             right_ds = y[arr >= split]
 
+            # Weighted entropy after the split
             remainder = ((len(left_ds)/len(arr)) * compute_entropy(left_ds)) + ((len(right_ds)/len(arr)) * compute_entropy(right_ds))
             
+            # If the information gain is higher than the current maximum, update the best split
             if max_gain < H_total - remainder:
-
                 max_gain = H_total - remainder
                 best_attribute = attribute
                 best_split = split
@@ -95,7 +102,7 @@ class Node:
     Parameters
     ----------
     attribute : int
-        The index of the feature used for splitting at this node.
+        Attribute used for splitting at this node.
     value : float
         The value of the feature at which the split occurs.
     left : Node
@@ -122,10 +129,9 @@ def decision_tree_learning(training_dataset, depth=0):
     Parameters
     ----------
     training_dataset : ndarray
-        A 2D array where each row represents an instance, the last column contains labels, 
-        and the other columns are features.
+        Training dataset
     depth : int, optional
-        Current depth of the node in the tree (default is 0).
+        Depth of the node in the tree (default is 0).
 
     Returns
     -------
@@ -133,11 +139,15 @@ def decision_tree_learning(training_dataset, depth=0):
         The root node of the constructed decision tree.
     """
     labels, counts = np.unique(training_dataset[:, -1], return_counts=True)
-    # Create a new node
+
+    # Creating a new node with the label of the majority class in the current dataset
     node = Node(label=labels[np.argmax(counts)])
 
+    # If all instances have the same label, we return this node as a leaf node
     if len(labels) == 1:
-        return node, node.depth 
+        return node, node.depth
+    
+    # Otherwise, we find the best attribute and value to split the dataset, create sub-trees and update the node attributes 
     else:
         node.attribute, node.value = find_split(training_dataset)
         data_left = training_dataset[training_dataset[:, node.attribute] < node.value]
@@ -150,7 +160,7 @@ def decision_tree_learning(training_dataset, depth=0):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# BONUS PART:
+### Bonus Part: Visualization
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,17 +185,20 @@ def plot_node(ax, node, x, y, dx, depth):
         Depth level of the current node.
     """
     if node.attribute is None:
+        # Leaf node
         ax.text(x, y, f'leaf: {node.label:.0f}', ha='center', bbox=dict(facecolor='white', edgecolor='black'))
     else:
+        # Internal node
         ax.text(x, y, f'[X{node.attribute} < {node.value:.1f}]', ha='center', bbox=dict(facecolor='white', edgecolor='black'))
         
-        # Plot left subtree
+        # Plotting left subtree with line to parent
         ax.plot([x, x - dx], [y, y - 1], color='orange')
         plot_node(ax, node.left, x - dx, y - 1, dx / 2, depth + 1)
         
-        # Plot right subtree
+        # Plotting right subtree with line to parent
         ax.plot([x, x + dx], [y, y - 1], color='blue')
         plot_node(ax, node.right, x + dx, y - 1, dx / 2, depth + 1)
+
 
 def visualize_tree(tree):
     """
@@ -196,19 +209,25 @@ def visualize_tree(tree):
     tree : Node
         Root node of the decision tree.
     """
+    # Getting the depth of the tree to set the plot limits
     depth = tree.depth
     fig, ax = plt.subplots()
     ax.set_xlim(-2**depth, 2**depth)
     ax.set_ylim(-depth-0.5, 1)
     ax.axis('off')
+
+    # Plotting the root node and its subtrees recursively
     plot_node(ax, tree, 0, 0, 2**(depth-1), 0)
+
     fig.tight_layout()
+
+    # Saving the plot to a file and displaying it
     plt.savefig("./tree.pdf")
     plt.show()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-## PART 3: Evaluation
+## Part 3: Evaluation
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -229,17 +248,21 @@ def predict(node, X):
     ndarray
         Array of predicted labels.
     """
+    # Base case: if the node is a leaf, return the label
     if node.attribute is None:
         return np.full(len(X), node.label)
     
+    # Recursive case: split the data based on the node's attribute and value
     left_indices = X[:, node.attribute] <= node.value
     right_indices = X[:, node.attribute] > node.value
     
+    # Predict the labels for the left and right subtrees recursively
     predictions  = np.zeros(len(X))
     predictions[left_indices] = predict(node.left, X[left_indices])
     predictions[right_indices] = predict(node.right, X[right_indices])
 
-    return predictions  
+    return predictions
+
 
 def evaluate(test_dataset, trained_tree):
     """
@@ -261,7 +284,11 @@ def evaluate(test_dataset, trained_tree):
     """
     y_pred = predict(trained_tree, test_dataset[:, :-1])
     y_true = test_dataset[:, -1]
+
+    # Calculating accuracy (proportion of correct predictions)
     accuracy = np.mean(y_pred == y_true)
+
+    # Constructing the confusion matrix
     num_classes = len(np.unique(y_true))
     confusion_matrix = np.zeros((num_classes, num_classes), dtype=int)
     for true_label, pred_label in zip(y_true, y_pred):
@@ -277,7 +304,7 @@ def calculate_precision(matrix):
     Parameters
     ----------
     matrix : ndarray
-        Confusion matrix where matrix[i, j] represents count of class i predicted as class j.
+        Confusion matrix.
 
     Returns
     -------
@@ -285,10 +312,14 @@ def calculate_precision(matrix):
         Precision for each class.
     """
     precisions = np.zeros(matrix.shape[0])
+
+    # Calculating precision for each class
     for index in range(matrix.shape[0]):
         column_sum = np.sum(matrix[:, index])
         precisions[index] = matrix[index, index] / column_sum if column_sum > 0 else 0
+
     return precisions
+
 
 def calculate_recall(matrix):
     """
@@ -305,10 +336,14 @@ def calculate_recall(matrix):
         Recall for each class.
     """
     recalls = np.zeros(matrix.shape[0])
+
+    # Calculating recall for each class
     for index in range(matrix.shape[0]):
         row_sum = np.sum(matrix[index, :])
         recalls[index] = matrix[index, index] / row_sum if row_sum > 0 else 0
+
     return recalls
+
 
 def calculate_f1(precisions, recalls):
     """
@@ -327,10 +362,15 @@ def calculate_f1(precisions, recalls):
         F1 scores for each class.
     """
     f1_scores = np.zeros(len(precisions))
+
+    # Calculating F1 score for each class
     for index in range(len(precisions)):
         denom = precisions[index] + recalls[index]
+        # F1 score calculation: 2 * (precision * recall) / (precision + recall)
         f1_scores[index] = 2 * precisions[index] * recalls[index] / denom if denom > 0 else 0
+
     return f1_scores
+
 
 def plot_confusion_matrix(matrix):
     """
@@ -339,10 +379,12 @@ def plot_confusion_matrix(matrix):
     Parameters
     ----------
     matrix : ndarray
-        Confusion matrix with true vs. predicted counts for each class.
+        Confusion matrix.
     """
-    labels = ["Room " + str(i + 1) for i in range(matrix.shape[0])]
+    labels = ["Room " + str(i+1) for i in range(matrix.shape[0])]
     fig, ax = plt.subplots()
+
+    # Confusion matrix as a heatmap
     cax = ax.matshow(matrix, cmap='Blues')
     fig.colorbar(cax)
 
@@ -355,6 +397,7 @@ def plot_confusion_matrix(matrix):
     ax.set_xlabel('Predicted Class')
     ax.set_ylabel('True Class')
 
+    # Threshold for text color for better visibility
     threshold = matrix.max() / 2
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
@@ -364,7 +407,8 @@ def plot_confusion_matrix(matrix):
     plt.tight_layout()
     plt.show()
 
-def cross_validation(dataset, visualize=False):
+
+def cross_validation(dataset, visualisation=False):
     """
     Performs 10-fold cross-validation, optionally visualizing the best model.
 
@@ -372,8 +416,8 @@ def cross_validation(dataset, visualize=False):
     ----------
     dataset : ndarray
         Full dataset with instances and labels.
-    visualize : bool, optional
-        If True, visualizes the best-performing tree.
+    visualisation : bool, optional
+        If True, visualises the best-performing tree.
 
     Returns
     -------
@@ -384,40 +428,49 @@ def cross_validation(dataset, visualize=False):
     """
     n_folds = 10
     total_accuracy = 0
-    fold_len = len(dataset) // n_folds
+    fold_len = len(dataset) // n_folds  # Number of instances in each fold
+    # Confusion matrix to store the results of each fold
     cumulative_confusion = np.zeros((len(np.unique(dataset[:, -1])), len(np.unique(dataset[:, -1]))))
+
+    # Shuffling to ensure random splits
     random_order = np.random.permutation(len(dataset))
     shuffled_data = dataset[random_order]
 
     highest_accuracy = 0
     best_tree_model = None
 
+    # Iterating over each fold for cross-validation
     for fold in range(n_folds):
         print(f"Processing fold {fold + 1}/{n_folds}")
 
+        # Splitting the data into training and test sets
         test_set = shuffled_data[fold * fold_len : (fold + 1) * fold_len]
         train_set = np.vstack([shuffled_data[:fold * fold_len], shuffled_data[(fold + 1) * fold_len:]])
 
+        # Training the decision tree on the training set and evaluating on the test set
         tree, _ = decision_tree_learning(train_set)
         fold_accuracy, fold_conf_matrix = evaluate(test_set, tree)
         
         total_accuracy += fold_accuracy
         cumulative_confusion += fold_conf_matrix
 
-        if visualize and fold_accuracy > highest_accuracy:
+        # Updating the best tree model if the current model has higher accuracy
+        if visualisation and fold_accuracy > highest_accuracy:
             highest_accuracy = fold_accuracy
             best_tree_model = tree
 
-    if visualize:
+    if visualisation:
         visualize_tree(best_tree_model)
 
     return total_accuracy / n_folds, cumulative_confusion / n_folds
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-### Part 4: Pruning (and evaluation gain)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### Part 4: Pruning (and evaluation again)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 def store_x(x, node):
     """
@@ -437,6 +490,7 @@ def store_x(x, node):
         else:
             store_x(x, node.right)
 
+
 def prune_tree(node):
     """
     Prunes the decision tree, converting eligible nodes into leaves based on improvement.
@@ -454,14 +508,14 @@ def prune_tree(node):
     if node.attribute is None:
         return True
 
-    # Recursively prune the sub-trees
+    # Recursively pruning the sub-trees
     left = prune_tree(node.left)
     right = prune_tree(node.right)
 
-    # Update the depth of the current node
+    # Updating the depth of the current node
     node.depth = max(node.left.depth, node.right.depth) + 1
 
-    #  Verify if we can prune
+    # Verifying if we can prune
     if left and right:
         improvement = 0
         for x in node.data_points:
@@ -471,7 +525,7 @@ def prune_tree(node):
                 improvement += int(node.label == x[-1]) - int(node.right.label == x[-1])
 
         if improvement >= 0:
-            # Convert the node into a leaf if pruning improves the tree
+            # Converting the node into a leaf if pruning improves the tree
             node.attribute = None
             node.value = None
             node.left = None
@@ -480,16 +534,17 @@ def prune_tree(node):
             return True
     return False
 
-def cross_validation_prune(data, visualize=False):
+
+def cross_validation_prune(dataset, visualisation=False):
     """
-    Performs 10-fold nested cross-validation with pruning and visualizes the best pruned model.
+    Performs 10-fold nested cross-validation with pruning and visualises the best pruned model.
 
     Parameters
     ----------
-    data : ndarray
-        Dataset for cross-validation with labels in the last column.
-    visualize : bool, optional
-        If True, visualizes the best pruned tree.
+    dataset : ndarray
+        Dataset for cross-validation
+    visualisation : bool, optional
+        If True, visualises the best pruned tree.
 
     Returns
     -------
@@ -500,13 +555,13 @@ def cross_validation_prune(data, visualize=False):
     """
     k = 10
     total_accuracy = 0
-    class_num = len(np.unique(data[:, -1]))
-    fold_size = len(data) // k
+    class_num = len(np.unique(dataset[:, -1]))
+    fold_size = len(dataset) // k
     confusion_matrix = np.zeros((class_num, class_num))
     depths_before = np.zeros(k)
     depths_after = np.zeros(k)
 
-    np.random.shuffle(data)
+    np.random.shuffle(dataset)
     
     for i in range(k):
         internal_accuracy = 0
@@ -514,11 +569,11 @@ def cross_validation_prune(data, visualize=False):
         print(f"Processing fold {i + 1}/{k}")
         
         # Seperating test set and training + validation set
-        test_db = data[int(i * fold_size):int((i + 1) * fold_size), :]
-        not_test_db = np.delete(data, np.s_[int(i * fold_size):int((i + 1) * fold_size)], axis=0)
+        test_db = dataset[int(i * fold_size):int((i + 1) * fold_size), :]
+        not_test_db = np.delete(dataset, np.s_[int(i * fold_size):int((i + 1) * fold_size)], axis=0)
 
-        # Memorize best tree for visualization
-        if visualize:
+        # Memorizing best tree for visualization
+        if visualisation:
             global_best = 0
             best_tree = None
 
@@ -538,15 +593,15 @@ def cross_validation_prune(data, visualize=False):
                 depths_after[i] = trained_tree.depth
                 depths_before[i] = depth_before
 
-            if visualize and new_accuracy > global_best:
+            if visualisation and new_accuracy > global_best:
                 global_best = new_accuracy
                 best_tree = trained_tree
 
         total_accuracy += internal_accuracy
         confusion_matrix += internal_con
     
-    #  visualize tree if requested
-    if visualize:
+    # Visualizing tree
+    if visualisation:
         visualize_tree(best_tree)
 
     print('Mean depth :')
@@ -558,33 +613,32 @@ def cross_validation_prune(data, visualize=False):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### EXAMPLE
+### Example
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def step3(data, visualize=False):
-    accuracy, confusion_matrix = cross_validation(data, visualize=visualize)
+def step3(dataset, visualisation=False):
+    accuracy, confusion_matrix = cross_validation(dataset, visualisation=visualisation)
     print("Accuracy:", accuracy)
     print("Precision:", calculate_precision(confusion_matrix))
     print("Recall:", calculate_recall(confusion_matrix))
     print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
-    if visualize:
+    if visualisation :
         plot_confusion_matrix(confusion_matrix)
 
 
-def step4(data, visualize=False):
-    accuracy, confusion_matrix = cross_validation_prune(data, visualize=visualize)
+def step4(dataset, visualisation=False):
+    accuracy, confusion_matrix = cross_validation_prune(dataset, visualisation=visualisation)
     print("Accuracy:", accuracy)
     print("Precision:", calculate_precision(confusion_matrix))
     print("Recall:", calculate_recall(confusion_matrix))
     print("F1-score:", calculate_f1(calculate_precision(confusion_matrix), calculate_recall(confusion_matrix)))
-    if visualize:
+    if visualisation :
         plot_confusion_matrix(confusion_matrix)
 
-# dataset = clean_data
+dataset = clean_data
 # dataset = noisy_data
 
-# step3(dataset, True)
-# step4(dataset, True)
-
+step3(dataset, True)
+step4(dataset, True)
